@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulador PJS - Concurso DIAN 2676 (Decreto 1742 de 2020)</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            dian: {
+              50: '#f0f7ff',
+              100: '#e0effe',
+              600: '#0284c7',
+              700: '#0369a1',
+              800: '#075985',
+              900: '#0c4a6e',
+              corporate: '#1e3a8a'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @keyframes pulse-critical {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.35; }
+    }
+    .timer-alert {
+      animation: pulse-critical 1.1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background-color: #94a3b8;
+      border-radius: 4px;
+    }
+    .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+      background-color: #475569;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen flex flex-col font-sans transition-colors duration-200">
+
+  <!-- CABECERA PRINCIPAL -->
+  <header class="sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-b border-slate-200 dark:border-slate-800 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="h-10 w-10 rounded-xl bg-blue-900 text-amber-400 border border-amber-500/30 flex items-center justify-center font-black text-sm shadow-md">
+          DIAN
+        </div>
+        <div>
+          <h1 class="text-base sm:text-lg font-bold leading-tight flex items-center gap-2">
+            Simulador PJS - Concurso DIAN 2676
+            <span class="text-[10px] font-semibold bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300 px-2 py-0.5 rounded-full border border-blue-200 dark:border-blue-800">GOA / CNSC</span>
+          </h1>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Prueba Funcional de Juicio Situacional • Decreto 1742 de 2020</p>
+        </div>
+      </div>
+
+      <!-- Temporizador y Contadores -->
+      <div class="flex items-center gap-3 sm:gap-6 flex-wrap">
+        <!-- Temporizador Aleatorio (60-80 min) -->
+        <div id="timerContainer" class="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 px-3.5 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 font-mono text-sm sm:text-base font-semibold shadow-inner">
+          <svg class="w-4 h-4 text-blue-700 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="2"/><path stroke-width="2" d="M12 6v6l4 2"/></svg>
+          <span id="timerDisplay">00:00:00</span>
+        </div>
+
+        <!-- Métricas Rápidas en Cabecera -->
+        <div class="hidden md:flex items-center gap-4 text-xs font-medium">
+          <div class="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+            <span>Respondidas: <strong id="topAnsweredCount">0</strong></span>
+          </div>
+          <div class="flex items-center gap-1.5 text-amber-700 dark:text-amber-400">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+            <span>Sin responder: <strong id="topUnansweredCount">120</strong></span>
+          </div>
+        </div>
+
+        <!-- Botones de Acción Superior -->
+        <div class="flex items-center gap-2">
+          <button id="themeToggleBtn" title="Cambiar Tema Día/Noche" class="p-2 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-800 transition text-sm">
+            🌙
+          </button>
+          <button id="finishBtnHeader" class="bg-red-600 hover:bg-red-700 text-white font-medium text-xs sm:text-sm px-4 py-2 rounded-xl transition shadow-sm">
+            Finalizar Prueba
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Barra de progreso -->
+    <div class="w-full bg-slate-200 dark:bg-slate-800 h-1.5">
+      <div id="progressBar" class="bg-blue-600 h-1.5 transition-all duration-300 w-0"></div>
+    </div>
+  </header>
+
+  <!-- CUERPO PRINCIPAL -->
+  <main class="flex-1 max-w-7xl mx-auto w-full p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-4 gap-6">
+
+    <!-- SECCIÓN DE PREGUNTA PJS (3 COLUMNAS) -->
+    <section class="lg:col-span-3 space-y-5">
+      <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-sm">
+        
+        <!-- Subencabezado de Contexto -->
+        <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800 flex-wrap gap-2">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span id="areaBadge" class="bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300 text-xs font-bold px-3 py-1 rounded-full border border-blue-200 dark:border-blue-800">
+              Área Funcional
+            </span>
+            <span id="counterBadge" class="text-xs text-slate-500 dark:text-slate-400 font-semibold">
+              Pregunta 1 de 120
+            </span>
+          </div>
+          <button id="bookmarkBtn" class="text-xs flex items-center gap-1.5 px-3 py-1 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition">
+            <span>🔖</span> <span id="bookmarkLabel">Marcar para revisar</span>
+          </button>
+        </div>
+
+        <!-- Estructura GOA: Caso Situacional -->
+        <div class="mt-5 p-4 sm:p-5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border-l-4 border-blue-700 dark:border-blue-500">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-black uppercase tracking-wider text-blue-800 dark:text-blue-400">
+              Caso (Juicio Situacional PJS)
+            </span>
+          </div>
+          <p id="caseContent" class="text-sm sm:text-base leading-relaxed text-slate-700 dark:text-slate-200 text-justify font-normal"></p>
+        </div>
+
+        <!-- Estructura GOA: Enunciado Resolutivo -->
+        <div class="mt-5">
+          <span class="text-xs font-black uppercase tracking-wider text-slate-400 block mb-1">Enunciado</span>
+          <p id="statementContent" class="text-base sm:text-lg font-bold text-slate-900 dark:text-white leading-snug"></p>
+        </div>
+
+        <!-- Estructura GOA: 3 Opciones de Respuesta -->
+        <div class="mt-6 space-y-3" id="optionsBox">
+          <!-- Opciones A, B, C generadas dinámicamente con barajado -->
+        </div>
+
+        <!-- Bloque de Retroalimentación en Modo Estudio -->
+        <div id="studyFeedbackBox" class="hidden mt-6 p-4 rounded-xl border"></div>
+
+        <!-- Controles Inferiores de Navegación -->
+        <div class="mt-8 pt-5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between flex-wrap gap-3">
+          <button id="prevBtn" class="px-4 py-2 rounded-xl text-sm font-semibold border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition disabled:opacity-40 disabled:cursor-not-allowed">
+            ← Anterior
+          </button>
+          
+          <button id="studyModeToggle" class="text-xs px-3.5 py-2 rounded-xl border border-indigo-200 dark:border-indigo-900 text-indigo-700 dark:text-indigo-300 bg-indigo-50/60 dark:bg-indigo-950/40 hover:bg-indigo-100 transition font-medium">
+            💡 Modo Estudio: <span id="studyModeStatus" class="font-bold">DESACTIVADO</span>
+          </button>
+
+          <button id="nextBtn" class="px-5 py-2 rounded-xl text-sm font-semibold bg-blue-700 hover:bg-blue-800 text-white transition shadow-sm">
+            Siguiente →
+          </button>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- PANEL LATERAL: MATRIZ Y CONTROL (1 COLUMNA) -->
+    <aside class="lg:col-span-1 space-y-5">
+      <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm sticky top-24">
+        
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+          <h3 class="text-sm font-bold text-slate-900 dark:text-white">Matriz de Preguntas</h3>
+          <span class="text-xs bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded font-mono text-slate-500">120 ítems</span>
+        </div>
+
+        <!-- Contadores de Estado -->
+        <div class="grid grid-cols-2 gap-2 mt-4 text-xs">
+          <div class="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50">
+            <div class="text-emerald-700 dark:text-emerald-400 font-semibold">Respondidas</div>
+            <div class="text-lg font-black text-emerald-800 dark:text-emerald-200" id="sideAnswered">0</div>
+          </div>
+          <div class="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50">
+            <div class="text-amber-700 dark:text-amber-400 font-semibold">Sin responder</div>
+            <div class="text-lg font-black text-amber-800 dark:text-amber-200" id="sideUnanswered">120</div>
+          </div>
+        </div>
+
+        <!-- Filtros Rápidos de la Matriz -->
+        <div class="flex gap-1 mt-3 text-[11px]">
+          <button onclick="filterGrid('all')" class="flex-1 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 font-medium">Todas</button>
+          <button onclick="filterGrid('pending')" class="flex-1 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 font-medium">Pendientes</button>
+          <button onclick="filterGrid('marked')" class="flex-1 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 font-medium">Marcadas</button>
+        </div>
+
+        <!-- Rejilla Interactiva 1-120 -->
+        <div id="gridContainer" class="mt-4 grid grid-cols-6 sm:grid-cols-8 lg:grid-cols-6 gap-1.5 max-h-[350px] overflow-y-auto pr-1 custom-scrollbar">
+          <!-- Botones inyectados por JS -->
+        </div>
+
+        <!-- Barajado Manual -->
+        <div class="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800">
+          <button id="reShuffleBtn" class="w-full text-xs py-2 px-3 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition flex items-center justify-center gap-1.5 font-medium">
+            <span>🔀</span> Rebarajar preguntas y opciones
+          </button>
+        </div>
+
+      </div>
+    </aside>
+
+  </main>
+
+  <!-- MODAL DE INFORME Y VEREDICTO FINAL -->
+  <div id="reportModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+    <div class="bg-white dark:bg-slate-900 w-full max-w-4xl rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 max-h-[92vh] flex flex-col my-auto overflow-hidden">
+      
+      <!-- Encabezado del Modal -->
+      <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/40">
+        <div>
+          <h2 class="text-xl font-black text-slate-900 dark:text-white">Dictamen Oficial de la Prueba PJS</h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Proceso Selección DIAN 2676 • Guía de Orientación al Aspirante (GOA)</p>
+        </div>
+        <button id="closeReportBtn" class="text-slate-400 hover:text-slate-600 dark:hover:text-white text-2xl font-bold p-1 leading-none">&times;</button>
+      </div>
+
+      <!-- Contenido del Reporte -->
+      <div class="p-6 overflow-y-auto custom-scrollbar space-y-6">
+        
+        <!-- Veredicto Principal de Clasificación (70%) -->
+        <div id="verdictBlock" class="p-6 rounded-2xl border-2 text-center flex flex-col items-center gap-2">
+          <!-- Inyectado por JS -->
+        </div>
+
+        <!-- Estadísticas Numéricas -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+          <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700">
+            <span class="text-xs text-slate-500 uppercase font-bold">Puntaje Obtenido</span>
+            <div id="finalScoreText" class="text-2xl font-black text-slate-900 dark:text-white mt-1">0.0%</div>
+            <span class="text-[11px] text-slate-400 font-medium">Mínimo 70.0%</span>
+          </div>
+          <div class="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/40">
+            <span class="text-xs text-emerald-600 dark:text-emerald-400 uppercase font-bold">Aciertos</span>
+            <div id="finalHitsCount" class="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">0</div>
+            <span class="text-[11px] text-emerald-600/80">de 120 preguntas</span>
+          </div>
+          <div class="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/40">
+            <span class="text-xs text-rose-600 dark:text-rose-400 uppercase font-bold">Errores</span>
+            <div id="finalMistakesCount" class="text-2xl font-black text-rose-600 dark:text-rose-400 mt-1">0</div>
+            <span class="text-[11px] text-rose-500/80">Respuestas erradas</span>
+          </div>
+          <div class="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40">
+            <span class="text-xs text-amber-600 dark:text-amber-400 uppercase font-bold">Sin Responder</span>
+            <div id="finalOmittedCount" class="text-2xl font-black text-amber-600 dark:text-amber-400 mt-1">0</div>
+            <span class="text-[11px] text-amber-500/80">Omitidas</span>
+          </div>
+        </div>
+
+        <!-- Revisión de Cada Caso y Justificación -->
+        <div>
+          <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+            <h3 class="text-base font-bold text-slate-900 dark:text-white">Revisión PJS con Justificación Legal</h3>
+            <div class="flex gap-2">
+              <button onclick="renderReviewCards('all')" class="text-xs px-3 py-1 rounded-lg bg-slate-200 dark:bg-slate-700 font-semibold">Todas</button>
+              <button onclick="renderReviewCards('wrong')" class="text-xs px-3 py-1 rounded-lg bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 font-semibold">Solo Errores</button>
+              <button onclick="renderReviewCards('correct')" class="text-xs px-3 py-1 rounded-lg bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 font-semibold">Solo Aciertos</button>
+            </div>
+          </div>
+          <div id="reviewCardsList" class="space-y-4 max-h-[380px] overflow-y-auto pr-2 custom-scrollbar">
+            <!-- Tarjetas de revisión por JS -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Pie del Modal -->
+      <div class="p-4 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center">
+        <span id="elapsedTimeBadge" class="text-xs text-slate-500"></span>
+        <button id="restartSessionModalBtn" class="bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl transition shadow">
+          Reiniciar con Nuevo Orden Aleatorio
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SCRIPT DE DATOS Y LÓGICA -->
+  <script>
+    // =========================================================================
+    // BANCO MAESTRO DE CASOS SITUACIONALES BASADO EN EL DECRETO 1742 DE 2020
+    // Y LA METODOLOGÍA OFICIAL DE LA GUÍA DE ORIENTACIÓN AL ASPIRANTE (GOA)
+    // =========================================================================
+    const SCENARIO_BANK = [
+      // 1. Dirección General (Art. 8, Num. 17)
+      {
+        area: "Dirección General - Lucha contra el Fraude",
+        caso: "Un ciudadano aporta información precisa, comprobable y reservada que permite a la DIAN incautar un cargamento millonario de contrabando e identificar una red de defraudación fiscal. El informante acude formalmente a reclamar el reconocimiento económico correspondiente.",
+        enunciado: "De acuerdo con las competencias orgánicas del Decreto 1742 de 2020, la autoridad facultada para fijar la cuantía, reconocer y ordenar el pago de recompensas por colaboración eficaz de terceros es:",
+        opciones: [
+          { texto: "El Director General de la DIAN mediante acto administrativo motivado.", correcta: true, justificacion: "Es correcta. El artículo 8 (numeral 17) del Decreto 1742 de 2020 asigna de manera expresa y privativa al Director General la función de fijar la cuantía, reconocer y pagar las recompensas y participaciones por colaboración eficaz contra el contrabando, la evasión y la corrupción." },
+          { texto: "El Director Seccional del lugar donde se interceptó físicamente la mercancía.", correcta: false, justificacion: "Es incorrecta. Los Directores Seccionales ejecutan operativos en su territorio pero carecen de competencia para decretar recompensas con cargo al presupuesto nacional." },
+          { texto: "El Jefe de la División de Fiscalización y Liquidación Aduanera Seccional.", correcta: false, justificacion: "Es incorrecta. Las divisiones de fiscalización instruyen investigaciones y determinan tributos, sin facultades presupuestales sobre recompensas." }
+        ]
+      },
+      // 2. Seguridad de la Información (Art. 10)
+      {
+        area: "Oficina de Seguridad de la Información",
+        caso: "En una diligencia de allanamiento y registro tributario a una sociedad evasora, los inspectores extraen discos duros y archivos electrónicos con contabilidad paralela. La defensa del contribuyente alega que no se garantizó la cadena de custodia ni la validez forense de la prueba digital.",
+        enunciado: "Conforme a las atribuciones del Decreto 1742 de 2020, la dependencia competente para recibir, custodiar, procesar y realizar los análisis forenses a las evidencias digitales recolectadas en acciones de control es:",
+        opciones: [
+          { texto: "La Oficina de Seguridad de la Información.", correcta: true, justificacion: "Es correcta. El artículo 10 (numeral 8) del Decreto 1742 de 2020 establece que la Oficina de Seguridad de la Información es la responsable de recibir, almacenar, custodiar y procesar, para procesos forenses, la información o evidencias recolectadas en acciones de control ejecutadas por Fiscalización." },
+          { texto: "La Subdirección de Infraestructura Tecnológica y de Operaciones.", correcta: false, justificacion: "Es incorrecta. Esta Subdirección administra servidores, centros de datos y redes, pero no adelanta análisis forenses probatorios." },
+          { texto: "La Oficina de Comunicaciones Institucionales.", correcta: false, justificacion: "Es incorrecta. Esta oficina divulga contenidos informativos y gestiona medios institucionales." }
+        ]
+      },
+      // 3. Tributación Internacional - Mutuo Acuerdo (Art. 12)
+      {
+        area: "Oficina de Tributación Internacional",
+        caso: "Una sociedad multinacional domiciliada en un Estado con el cual Colombia tiene Convenio para Evitar la Doble Imposición (CDI) considera que la liquidación practicada en el país genera una doble tributación no conforme al tratado, e inicia la solicitud de Procedimiento de Mutuo Acuerdo (MAP).",
+        enunciado: "Según el Decreto 1742 de 2020, ¿cuál es la dependencia facultada para actuar como autoridad competente en la prevención y resolución de conflictos derivados de convenios internacionales bajo el Procedimiento de Mutuo Acuerdo?",
+        opciones: [
+          { texto: "La Oficina de Tributación Internacional.", correcta: true, justificacion: "Es correcta. El artículo 12 (numeral 6) faculta expresamente a la Oficina de Tributación Internacional para actuar como autoridad competente en el Procedimiento de Mutuo Acuerdo (MAP) y resolver controversias de convenios para evitar la doble imposición." },
+          { texto: "El Ministerio de Comercio, Industria y Turismo.", correcta: false, justificacion: "Es incorrecta. Es una entidad del orden nacional ajena a la administración de los procedimientos tributarios internacionales de la DIAN." },
+          { texto: "La División de Cobranzas Seccional.", correcta: false, justificacion: "Es incorrecta. Carece de competencia sustancial y de alcance internacional." }
+        ]
+      },
+      // 4. Registro Único Tributario e Inscripción de Oficio (Art. 14)
+      {
+        area: "Subdirección de Administración del RUT",
+        caso: "A través del cruce masivo de información exógena, la DIAN detecta que miles de personas naturales que perciben altos ingresos por actividades comerciales no se encuentran inscritas en el Registro Único Tributario.",
+        enunciado: "De conformidad con el Decreto 1742 de 2020, la dependencia competente para ordenar y ejecutar de oficio las actuaciones masivas en el Registro Único Tributario (RUT) es:",
+        opciones: [
+          { texto: "La Subdirección de Administración del Registro Único Tributario.", correcta: true, justificacion: "Es correcta. El artículo 14 (numeral 9) señala textualmente como función de esta Subdirección realizar de oficio las actuaciones masivas en el Registro Único Tributario - RUT." },
+          { texto: "La Subdirección de Soluciones y Desarrollo.", correcta: false, justificacion: "Es incorrecta. Esta área programa y desarrolla software, no emite actos de inscripción tributaria." },
+          { texto: "La Registraduría Nacional del Estado Civil.", correcta: false, justificacion: "Es incorrecta. Expide el documento de identidad ciudadana, pero no administra registros fiscales." }
+        ]
+      },
+      // 5. Gestión de Recaudo y Autorretenedores (Art. 15)
+      {
+        area: "Subdirección de Recaudo",
+        caso: "Una compañía solicita formalmente ser autorizada para actuar como autorretenedora del impuesto sobre la renta, argumentando un volumen representativo de operaciones mercantiles e idoneidad administrativa.",
+        enunciado: "Con base en las facultades del Decreto 1742 de 2020, la dependencia competente para autorizar o suspender de oficio o a petición de parte a las personas jurídicas que deban actuar como autorretenedores es:",
+        opciones: [
+          { texto: "La Subdirección de Recaudo.", correcta: true, justificacion: "Es correcta. El artículo 15 (numeral 9) dispone que corresponde a la Subdirección de Recaudo autorizar de oficio o a petición de parte a quienes deben actuar como autorretenedores, y suspender dicha condición cuando no se garantice el pago." },
+          { texto: "La Subdirección de Asuntos Disciplinarios.", correcta: false, justificacion: "Es incorrecta. Conoce de faltas de servidores públicos de la entidad, no de obligaciones tributarias de contribuyentes." },
+          { texto: "El Banco de la República.", correcta: false, justificacion: "Es incorrecta. Es la banca central nacional, sin injerencia en la designación de agentes retenedores fiscales." }
+        ]
+      },
+      // 6. Impulso a la Formalización - Régimen SIMPLE (Art. 16)
+      {
+        area: "Subdirección para el Impulso de la Formalización",
+        caso: "Varios municipios del país no han reportado a la DIAN las tarifas unificadas del impuesto de industria y comercio (ICA) consolidado, lo cual frena la integración del sistema de liquidación del Régimen Simple de Tributación (SIMPLE).",
+        enunciado: "La dependencia responsable de representar a la DIAN ante municipios y distritos y canalizar la actualización de tarifas consolidadas del ICA en el Régimen SIMPLE según el Decreto 1742 de 2020 es:",
+        opciones: [
+          { texto: "La Subdirección para el Impulso de la Formalización Tributaria.", correcta: true, justificacion: "Es correcta. El artículo 16 (numerales 4 y 5) le asigna representar a la DIAN ante municipios y distritos y recibir la definición y actualización de la tarifa consolidada del ICA para el Régimen SIMPLE." },
+          { texto: "La Subdirección de Factura Electrónica y Soluciones Operativas.", correcta: false, justificacion: "Es incorrecta. Administra el sistema de facturación electrónica y validación previa, no la articulación con entes territoriales del SIMPLE." },
+          { texto: "El Departamento Nacional de Planeación (DNP).", correcta: false, justificacion: "Es incorrecta. Es un organismo técnico de planificación nacional, no una dependencia operativa de la DIAN." }
+        ]
+      },
+      // 7. Factura Electrónica como Título Valor (Art. 17)
+      {
+        area: "Factura Electrónica y Soluciones Operativas",
+        caso: "Una empresa de financiamiento (factoring) requiere registrar el endoso electrónico de facturas electrónicas para negociarlas como título valor en el territorio nacional, presentándose dudas sobre la administración y trazabilidad del registro oficial.",
+        enunciado: "Según el Decreto 1742 de 2020, ¿qué dependencia es la encargada de administrar el registro de las facturas electrónicas consideradas como título valor que circulen en el país?",
+        opciones: [
+          { texto: "La Subdirección de Factura Electrónica y Soluciones Operativas.", correcta: true, justificacion: "Es correcta. El artículo 17 (numeral 13) le asigna incluir el registro de las facturas electrónicas consideradas como título valor (RADIAN) que circulen en el territorio nacional, garantizando consulta y trazabilidad." },
+          { texto: "La Superintendencia Financiera directamente.", correcta: false, justificacion: "Es incorrecta. Regula las entidades bancarias y el mercado bursátil, pero la plataforma de registro de la factura electrónica es administrada por la DIAN." },
+          { texto: "La Subdirección de Devoluciones.", correcta: false, justificacion: "Es incorrecta. Gestiona solicitudes de reintegro de saldos a favor o pagos de lo no debido." }
+        ]
+      },
+      // 8. Devoluciones de Impuestos y Títulos TIDIS (Art. 19)
+      {
+        area: "Subdirección de Devoluciones",
+        caso: "Se profieren resoluciones que reconocen cuantiosas sumas por devolución de saldos a favor en renta. Para su cancelación, la entidad debe gestionar ante el Ministerio de Hacienda la administración y emisión del macrotítulo en Títulos de Devolución de Impuestos (TIDIS).",
+        enunciado: "Conforme al artículo 19 del Decreto 1742 de 2020, la gestión técnica ante el Ministerio de Hacienda para la administración del macrotítulo en TIDIS y el manejo del Fondo Rotatorio de Devoluciones corresponde a:",
+        opciones: [
+          { texto: "La Subdirección de Devoluciones.", correcta: true, justificacion: "Es correcta. El artículo 19 (numerales 6, 7 y 8) señala expresamente que esta Subdirección gestiona la contratación del depósito centralizado de valores para los TIDIS y administra el Fondo Rotatorio de Devoluciones." },
+          { texto: "La División de Cobranzas Seccional.", correcta: false, justificacion: "Es incorrecta. Persigue el cobro coactivo de deudas pendientes, no administra macrotítulos ni emite títulos de deuda para devolución." },
+          { texto: "La Contraloría General de la República.", correcta: false, justificacion: "Es incorrecta. Ejerce control fiscal posterior sobre los recursos del Estado, no administra la operatividad de los TIDIS." }
+        ]
+      },
+      // 9. Cobro y Procesos Concursales (Art. 20)
+      {
+        area: "Cobranzas y Control Extensivo",
+        caso: "Un deudor calificado con deudas multimillonarias entra en proceso de liquidación judicial y reorganización empresarial ante la Superintendencia de Sociedades. Se debe garantizar que la entidad se haga parte oportuna con los créditos fiscales.",
+        enunciado: "De acuerdo con el Decreto 1742 de 2020, la dependencia encargada de controlar a nivel nacional que las Direcciones Seccionales intervengan oportunamente en los procesos concursales, liquidatorios y de insolvencia es:",
+        opciones: [
+          { texto: "La Subdirección de Cobranzas y Control Extensivo.", correcta: true, justificacion: "Es correcta. El artículo 20 (numeral 4) confiere la función de controlar que la Dirección Operativa de Grandes Contribuyentes y las Seccionales se hagan parte en procesos concursales, liquidatorios y de insolvencia." },
+          { texto: "La Subdirección del Laboratorio Aduanero.", correcta: false, justificacion: "Es incorrecta. Solo emite dictámenes químicos y físicos sobre muestras de carga aduanera." },
+          { texto: "La Subdirección Escuela de Impuestos y Aduanas.", correcta: false, justificacion: "Es incorrecta. Administra el plan de capacitación institucional." }
+        ]
+      },
+      // 10. Valoración Aduanera y Conceptos Prevalentes (Art. 23)
+      {
+        area: "Subdirección Técnica Aduanera",
+        caso: "Durante una controversia aduanera por la subpartida arancelaria y el valor en aduana de un cargamento de maquinaria pesada, un funcionario de una Seccional emite un concepto divergente al proferido por la Subdirección Técnica Aduanera del Nivel Central.",
+        enunciado: "De conformidad con el parágrafo del artículo 23 del Decreto 1742 de 2020, frente a la contradicción técnica suscitada entre ambas dependencias, la regla de jerarquía jurídica señala que:",
+        opciones: [
+          { texto: "El concepto de la Subdirección Técnica Aduanera es de obligatorio cumplimiento y prevalece sobre el de la Seccional.", correcta: true, justificacion: "Es correcta. El parágrafo del artículo 23 dispone taxativamente que los conceptos técnicos de la Subdirección Técnica Aduanera son de obligatorio cumplimiento y tienen carácter prevalente sobre los que emitan las Direcciones Seccionales." },
+          { texto: "Prevalece el criterio del funcionario seccional por encontrarse en el lugar de la inspección física de la mercancía.", correcta: false, justificacion: "Es incorrecta. La norma expresamente supedita los criterios técnicos seccionales a la doctrina unificada del Nivel Central." },
+          { texto: "Se debe acudir a un tribunal de arbitramento privado para definir cuál dictamen tiene fuerza obligatoria.", correcta: false, justificacion: "Es incorrecta. La jerarquía funcional del Decreto 1742 resuelve internamente y por mandato legal la prevalencia técnica." }
+        ]
+      },
+      // 11. Garantías Globales vs Específicas (Art. 24 vs Art. 70)
+      {
+        area: "Subdirección de Registro y Control Aduanero",
+        caso: "Un Agente de Aduanas autorizado para operar en todos los puertos del territorio nacional presenta la póliza de Garantía Global exigida por la normatividad aduanera para respaldar sus actuaciones en el país.",
+        enunciado: "Según el Decreto 1742 de 2020, la dependencia competente para recibir, administrar, controlar y verificar el mantenimiento de requisitos amparados en GARANTÍAS GLOBALES es:",
+        opciones: [
+          { texto: "La Subdirección de Registro y Control Aduanero.", correcta: true, justificacion: "Es correcta. El artículo 24 (numeral 2) establece como función exclusiva de esta Subdirección recibir y administrar las garantías globales constituidas por usuarios aduaneros y operadores de comercio exterior." },
+          { texto: "La Dirección Seccional de Impuestos y Aduanas de Leticia.", correcta: false, justificacion: "Es incorrecta. Las Seccionales administran garantías específicas locales (Art. 70 Num. 27), mientras que las globales corresponden al Nivel Central." },
+          { texto: "El Centro de Trazabilidad Aduanera.", correcta: false, justificacion: "Es incorrecta. Monitorea alertas satelitales y tránsitos en ruta, no aprueba pólizas financieras." }
+        ]
+      },
+      // 12. Operador Económico Autorizado - OEA (Art. 25)
+      {
+        area: "Subdirección del OEA",
+        caso: "Una sociedad exportadora clasificada como usuario de bajo riesgo solicita acceder a los beneficios de inspección preferencial y desaduanamiento expedito que otorga el programa del Operador Económico Autorizado.",
+        enunciado: "Con base en el artículo 25 del Decreto 1742 de 2020, resolver las solicitudes de autorización, revalidación y trámite de recursos de reposición frente a negaciones del OEA corresponde a:",
+        opciones: [
+          { texto: "La Subdirección del Operador Económico Autorizado (OEA).", correcta: true, justificacion: "Es correcta. El artículo 25 confiere a esta Subdirección resolver las solicitudes de autorización OEA, expedir los actos administrativos pertinentes y revalidar los programas de usuarios confiables." },
+          { texto: "La Policía de Tránsito y Transporte.", correcta: false, justificacion: "Es incorrecta. Controla la movilidad vehicular en carreteras, no los regímenes de seguridad aduanera internacional." },
+          { texto: "La División de Viajeros del Aeropuerto.", correcta: false, justificacion: "Es incorrecta. Inspecciona equipajes y tributos de pasajeros en terminales aéreos." }
+        ]
+      },
+      // 13. Laboratorio Aduanero (Art. 26)
+      {
+        area: "Subdirección del Laboratorio Aduanero",
+        caso: "En una inspección aduanera en Buenaventura se toma una muestra de reactivo químico importado. El laboratorio regional emite un concepto sobre el porcentaje de pureza, pero el Laboratorio Central de la DIAN emite un resultado científico diferente.",
+        enunciado: "Conforme al parágrafo del artículo 26 del Decreto 1742 de 2020, en materia probatoria y técnica sobre el análisis de las mercancías:",
+        opciones: [
+          { texto: "Los reportes y dictámenes fisicoquímicos del Laboratorio Aduanero Central tienen carácter prevalente sobre los de las Seccionales.", correcta: true, justificacion: "Es correcta. El parágrafo del artículo 26 determina que los estudios, reportes y dictámenes emitidos por la Subdirección del Laboratorio Aduanero tendrán carácter prevalente sobre los emitidos por laboratorios seccionales." },
+          { texto: "Debe promediarse el resultado de ambos análisis y liquidar los gravámenes con base en el término medio.", correcta: false, justificacion: "Es incorrecta. La norma fija prevalencia técnica estricta, no mecanismos de promedio aritmético." },
+          { texto: "El dictamen se anula automáticamente y la mercancía debe ser nacionalizada de inmediato sin control.", correcta: false, justificacion: "Es incorrecta. La discrepancia se supera aplicando la prevalencia legal que tiene el laboratorio central." }
+        ]
+      },
+      // 14. Facilitación y Centros de Excelencia (Art. 27)
+      {
+        area: "Servicios y Facilitación al Comercio Exterior",
+        caso: "Un Centro de Excelencia de la DIAN emite una serie de recomendaciones para estandarizar los tiempos de revisión documental en operaciones aduaneras de la industria farmacéutica.",
+        enunciado: "De acuerdo con el artículo 27 del Decreto 1742 de 2020, la dependencia encargada de garantizar que las recomendaciones de los Centros de Excelencia sean aplicadas de manera vinculante por las Seccionales de Aduanas es:",
+        opciones: [
+          { texto: "La Subdirección de Servicios y Facilitación al Comercio Exterior.", correcta: true, justificacion: "Es correcta. El artículo 27 (numeral 15) señala taxativamente como su deber garantizar que las recomendaciones entregadas por los Centros de Excelencia sean aplicadas de manera vinculante por las Direcciones Seccionales de Aduanas." },
+          { texto: "La Subdirección de Asuntos Disciplinarios.", correcta: false, justificacion: "Es incorrecta. Su rol es sancionatorio contra faltas de los empleados públicos, no la gestión de facilitación aduanera." },
+          { texto: "La Defensoría del Pueblo.", correcta: false, justificacion: "Es incorrecta. Es un organismo de control de derechos humanos ajeno a los procedimientos internos aduaneros." }
+        ]
+      },
+      // 15. Control Aduanero Posterior (Art. 30)
+      {
+        area: "Subdirección de Fiscalización Aduanera",
+        caso: "Se culminan los trámites de desaduanamiento y levante de un lote de vehículos. Meses después, la DIAN recopila indicios de que la documentación de importación contenía valores adulterados para evadir aranceles.",
+        enunciado: "Bajo las directrices del Decreto 1742 de 2020, la dependencia del Nivel Central facultada para planear y ejercer el control aduanero posterior mediante requerimientos, decomisos y liquidaciones oficiales es:",
+        opciones: [
+          { texto: "La Subdirección de Fiscalización Aduanera.", correcta: true, justificacion: "Es correcta. El artículo 30 (numeral 1) señala que corresponde a la Subdirección de Fiscalización Aduanera planear y ejercer el control posterior sobre infracciones aduaneras, formulando liquidaciones, decomisos y sanciones." },
+          { texto: "La División de la Operación Aduanera Seccional.", correcta: false, justificacion: "Es incorrecta. La Operación Aduanera ejerce control simultáneo durante el desaduanamiento y el levante, mientras que el control posterior le compete a Fiscalización." },
+          { texto: "El Ministerio de Relaciones Exteriores.", correcta: false, justificacion: "Es incorrecta. Maneja relaciones diplomáticas y consulares, no el control aduanero posterior." }
+        ]
+      },
+      // 16. Fiscalización Cambiaria (Art. 31)
+      {
+        area: "Subdirección de Fiscalización Cambiaria",
+        caso: "Una firma comercial dedicada a la compra y venta profesional de divisas en efectivo incumple las obligaciones de reporte y registro exigidas en el régimen cambiario cuya vigilancia fue asignada a la DIAN.",
+        enunciado: "Conforme al artículo 31 del Decreto 1742 de 2020, planear, dirigir y controlar las acciones sancionatorias por infracciones al régimen de compraventa profesional de divisas y operaciones de cambio adscritas a la entidad corresponde a:",
+        opciones: [
+          { texto: "La Subdirección de Fiscalización Cambiaria.", correcta: true, justificacion: "Es correcta. El artículo 31 asigna a esta dependencia el control, investigación, determinación y aplicación de sanciones por violación al régimen cambiario de competencia de la DIAN y el control a cambistas profesionales." },
+          { texto: "La Superintendencia de Puertos y Transporte.", correcta: false, justificacion: "Es incorrecta. Vigila a concesionarios e infraestructura vial y portuaria, no la fiscalización cambiaria." },
+          { texto: "La Subdirección Financiera de la DIAN.", correcta: false, justificacion: "Es incorrecta. Administra el presupuesto interno y las cuentas de nómina y funcionamiento de la DIAN." }
+        ]
+      },
+      // 17. Precios de Transferencia y Régimen CHC (Art. 32)
+      {
+        area: "Subdirección de Fiscalización Internacional",
+        caso: "Una sociedad colombiana con inversiones directas en el exterior solicita acogerse al régimen especial de Compañías Holding Colombianas (CHC) y a su vez tramita la verificación de su informe local de precios de transferencia.",
+        enunciado: "Según el artículo 32 del Decreto 1742 de 2020, la dependencia competente para conocer y gestionar las solicitudes del Régimen CHC y fiscalizar los precios de transferencia es:",
+        opciones: [
+          { texto: "La Subdirección de Fiscalización Internacional.", correcta: true, justificacion: "Es correcta. El artículo 32 (numerales 1 y 7) le asigna expresamente la fiscalización de precios de transferencia y conocer las solicitudes de entidades que deseen acogerse o permanecer en el régimen CHC." },
+          { texto: "La Subdirección del RUT.", correcta: false, justificacion: "Es incorrecta. Asigna el número de identificación y administra los formularios básicos, pero no examina la procedencia sustancial del régimen CHC." },
+          { texto: "El Banco Interamericano de Desarrollo.", correcta: false, justificacion: "Es incorrecta. Organismo multilateral de crédito ajeno a las investigaciones fiscales internas." }
+        ]
+      },
+      // 18. Persecución del Delito Fiscal (Art. 33)
+      {
+        area: "Subdirección de Apoyo en Lucha contra Delito Aduanero y Fiscal",
+        caso: "A partir de liquidaciones oficiales tributarias se constata la existencia de maniobras fraudulentas tipificadas como delito de defraudación o evasión tributaria en el Código Penal. Se evalúa iniciar la acción punitiva.",
+        enunciado: "De acuerdo con el artículo 33 del Decreto 1742 de 2020, la dependencia competente para analizar las liquidaciones oficiales y determinar si ameritan presentar peticiones especiales de inicio de acción penal ante la Fiscalía General de la Nación es:",
+        opciones: [
+          { texto: "La Subdirección de Apoyo en la Lucha contra el Delito Aduanero y Fiscal.", correcta: true, justificacion: "Es correcta. El artículo 33 (numerales 11, 12 y 13) le asigna de manera puntual recibir las liquidaciones oficiales, valorarlas bajo criterios de razonabilidad y proporcionalidad y radicar las peticiones penales especiales ante la Fiscalía." },
+          { texto: "La Subdirección de Cobranzas y Control Extensivo.", correcta: false, justificacion: "Es incorrecta. Realiza la gestión de cobro de cartera administrativa sin instruir acciones penales especializadas." },
+          { texto: "El Tribunal Superior de Distrito Judicial.", correcta: false, justificacion: "Es incorrecta. Es un órgano jurisdiccional que juzga causas, no la dependencia de la administración que califica y promueve la denuncia." }
+        ]
+      },
+      // 19. Sistema Específico de Carrera de la DIAN (Art. 36)
+      {
+        area: "Subdirección de Gestión del Empleo Público",
+        caso: "En el marco de la provisión de empleos en la DIAN, se requiere coordinar los reportes técnicos a la Comisión Nacional del Servicio Civil (CNSC) sobre las vacantes definitivas e implementar las reglas de carrera administrativa especial.",
+        enunciado: "Según el artículo 36 del Decreto 1742 de 2020, la dependencia encargada de implementar el Sistema Específico de Carrera de la entidad y suministrar a la CNSC la información para dicho registro es:",
+        opciones: [
+          { texto: "La Subdirección de Gestión del Empleo Público.", correcta: true, justificacion: "Es correcta. El artículo 36 (numerales 6 y 12) señala que le corresponde implementar el Sistema Específico de Carrera de la DIAN y suministrar a la CNSC la información necesaria para el registro en carrera." },
+          { texto: "La Escuela de Impuestos y Aduanas exclusivamente.", correcta: false, justificacion: "Es incorrecta. La Escuela ejecuta las fases de capacitación y cursos de formación, pero la administración del empleo y registro de carrera corresponde a Empleo Público." },
+          { texto: "El Consejo de Estado.", correcta: false, justificacion: "Es incorrecta. Máximo tribunal de lo contencioso administrativo, sin roles en la gestión de nómina o carrera interna." }
+        ]
+      },
+      // 20. Faltas y Régimen Disciplinario Interno (Art. 39)
+      {
+        area: "Subdirección de Asuntos Disciplinarios",
+        caso: "Un servidor público de la entidad es denunciado por presunta transgresión a los deberes de imparcialidad y custodia documental en un trámite aduanero, iniciándose una investigación preliminar interna.",
+        enunciado: "De acuerdo con el artículo 39 del Decreto 1742 de 2020, sin perjuicio del poder preferente de la Procuraduría y de la ITRC, la dependencia facultada para sustanciar y fallar en primera instancia los procesos disciplinarios contra servidores de la DIAN es:",
+        opciones: [
+          { texto: "La Subdirección de Asuntos Disciplinarios.", correcta: true, justificacion: "Es correcta. El artículo 39 (numeral 2) establece expresamente que corresponde a la Subdirección de Asuntos Disciplinarios conocer, sustanciar y fallar en primera instancia los procesos disciplinarios contra servidores o exservidores de la entidad." },
+          { texto: "El Jefe inmediato del funcionario investigado.", correcta: false, justificacion: "Es incorrecta. Las competencias disciplinarias están formalmente centralizadas en la subdirección respectiva para preservar la independencia y el debido proceso." },
+          { texto: "La Defensoría del Contribuyente.", correcta: false, justificacion: "Es incorrecta. Defiende los derechos de los usuarios externos frente a excesos de la administración, no tiene potestad disciplinaria interna." }
+        ]
+      },
+      // 21. Mercancías Aprehendidas y Disposición Final (Art. 42)
+      {
+        area: "Subdirección Logística - Gestión Corporativa",
+        caso: "Una vez ejecutoriadas las resoluciones de decomiso sobre un inventario de electrodomésticos y telas de contrabando, la Seccional evalúa si los bienes deben ser objeto de donación, remate o destrucción y quién autoriza el procedimiento.",
+        enunciado: "Conforme al artículo 42 del Decreto 1742 de 2020, la dependencia competente para fijar los programas de inventario, custodia y autorizar la disposición final a través de sus distintas modalidades es:",
+        opciones: [
+          { texto: "La Subdirección Logística en coordinación con las Seccionales.", correcta: true, justificacion: "Es correcta. El artículo 42 (numerales 1, 2 y 3) dispone que a la Subdirección Logística le corresponde supervisar, controlar y disponer a través de sus distintas modalidades de las mercancías aprehendidas, decomisadas o abandonadas a favor de la Nación." },
+          { texto: "El Ministerio de Comercio Exterior mediante licitación privada.", correcta: false, justificacion: "Es incorrecta. Las mercancías a favor de la Nación bajo jurisdicción de la DIAN son dispuestas directamente por sus dependencias orgánicas." },
+          { texto: "Cualquier empleado que custodie la bodega mediante sorteo informal.", correcta: false, justificacion: "Es incorrecta. La disposición de bienes públicos exige acto administrativo reglado y riguroso control de inventarios." }
+        ]
+      },
+      // 22. Trazabilidad Satelital y Dispositivos de Carga (Art. 49)
+      {
+        area: "Centro de Trazabilidad Aduanera",
+        caso: "Durante el tránsito aduanero de una tractomula desde el puerto de Cartagena hacia una Zona Franca del interior del país, el sistema satelital emite una alerta roja por rotura de precinto electrónico y desvío injustificado de ruta.",
+        enunciado: "Según el artículo 49 del Decreto 1742 de 2020, la dependencia encargada de monitorear en tiempo real las alertas de los dispositivos electrónicos de seguridad y activar los protocolos con autoridades es:",
+        opciones: [
+          { texto: "La Subdirección del Centro de Trazabilidad Aduanera.", correcta: true, justificacion: "Es correcta. El artículo 49 confiere a esta Subdirección el seguimiento y monitoreo de cargas bajo control aduanero mediante scanners, precintos y dispositivos electrónicos, emitiendo alertas operativas." },
+          { texto: "La Subdirección de Estudios Económicos.", correcta: false, justificacion: "Es incorrecta. Formula proyecciones macroeconómicas de recaudo y estudios de evasión, no control vehicular satelital." },
+          { texto: "La Superintendencia de Notariado y Registro.", correcta: false, justificacion: "Es incorrecta. Administra el registro inmobiliario y de instrumentos públicos." }
+        ]
+      },
+      // 23. Doctrina Oficial y Carácter Vinculante (Art. 56)
+      {
+        area: "Subdirección de Normativa y Doctrina",
+        caso: "Un contribuyente solicita que se aclare la interpretación aplicable sobre un artículo tributario de reciente reforma. Una división de auditoría propone aplicar una tesis personal contraria a los conceptos publicados en la web oficial de la DIAN.",
+        enunciado: "De acuerdo con el artículo 56 y sus parágrafos del Decreto 1742 de 2020, frente a la aplicación de la ley tributaria y aduanera, la doctrina oficial vinculante se rige por la siguiente regla:",
+        opciones: [
+          { texto: "Los conceptos emitidos por la Subdirección de Normativa y Doctrina y publicados en la web son de obligatoria observancia para los funcionarios de la entidad.", correcta: true, justificacion: "Es correcta. El parágrafo del artículo 56 consagra que los conceptos emitidos por esta Subdirección y publicados en el portal web institucional constituyen interpretación oficial para los empleados públicos de la DIAN y son de obligatoria observancia." },
+          { texto: "Cada auditor goza de libre albedrío para interpretar la norma como considere oportuno sin atender doctrina institucional.", correcta: false, justificacion: "Es incorrecta. La DIAN se fundamenta en el principio de unidad de doctrina para otorgar seguridad jurídica a los administrados." },
+          { texto: "Los conceptos institucionales solo tienen valor de recomendación optativa sin ninguna fuerza vinculante interna.", correcta: false, justificacion: "Es incorrecta. El decreto le otorga expresamente carácter imperativo y vinculante para el personal de la institución." }
+        ]
+      },
+      // 24. Escala de Competencias por Cuantía UVT en Recursos (Art. 69)
+      {
+        area: "Competencia de Recursos de Reconsideración",
+        caso: "Un contribuyente interpone recurso de reconsideración contra una liquidación oficial de revisión tributaria proferida por la Seccional de Girardot cuya cuantía, sumadas las sanciones impuestas, asciende a 12.000 UVT.",
+        enunciado: "De conformidad con las reglas precisas de competencia por cuantía consagradas en el artículo 69 del Decreto 1742 de 2020, la dependencia competente para resolver este recurso es:",
+        opciones: [
+          { texto: "La División Jurídica de la Dirección Seccional de Impuestos de Bogotá (capital del departamento de Cundinamarca).", correcta: true, justificacion: "Es correcta. El artículo 69 (numeral 2.1) establece que cuando la cuantía esté entre 2.000 y 20.000 UVT, los recursos contra actos de Girardot en materia tributaria son de competencia de la División Jurídica de la Seccional de Impuestos de Bogotá." },
+          { texto: "La Subdirección de Recursos Jurídicos del Nivel Central.", correcta: false, justificacion: "Es incorrecta. El Nivel Central conoce cuando la cuantía es igual o superior a veinte mil (20.000) UVT (Art. 69, parágrafo transitorio)." },
+          { texto: "La misma oficina que practicó la liquidación en primera instancia sin revisión jurídica.", correcta: false, justificacion: "Es incorrecta. El recurso de reconsideración garantiza la segunda instancia administrativa y lo resuelve el área jurídica designada por ley." }
+        ]
+      },
+      // 25. POLFA en Zona Primaria Aduanera (Art. 60 Parágrafo)
+      {
+        area: "Dirección de Gestión de POLFA",
+        caso: "Efectivos armados de la Policía Fiscal y Aduanera (POLFA) intentan ingresar de forma independiente y autónoma a los muelles portuarios habilitados (Zona Primaria) para practicar requisas a contenedores sin coordinar con el Director Seccional de Aduanas.",
+        enunciado: "Conforme al parágrafo del artículo 60 del Decreto 1742 de 2020, la limitación taxativa que regula la intervención de la POLFA en Zona Primaria aduanera establece que:",
+        opciones: [
+          { texto: "Las funciones en zona primaria corresponden exclusivamente a los empleados de la DIAN, requiriendo autorización previa del Director General para que la POLFA brinde apoyo.", correcta: true, justificacion: "Es correcta. El parágrafo del artículo 60 dispone que en zona primaria y establecimientos cerrados las funciones son ejercidas exclusivamente por empleados de la DIAN, y solo previa autorización del Director General podrán contar con el apoyo de la POLFA." },
+          { texto: "La POLFA ostenta la administración y el mando exclusivo de los puertos nacionales por encima de los funcionarios aduaneros civiles.", correcta: false, justificacion: "Es incorrecta. La autoridad aduanera natural radica en el cuerpo funcional civil de la DIAN." },
+          { texto: "La POLFA tiene vetado cualquier tipo de ingreso aun si media orden expresa del Director General.", correcta: false, justificacion: "Es incorrecta. Sí puede actuar en zona primaria cuando las circunstancias lo exijan, bajo autorización formal del Director General." }
+        ]
+      },
+      // 26. Inspección en Operación Aduanera Seccional (Art. 67-70)
+      {
+        area: "Nivel Local - Seccionales de Aduanas",
+        caso: "Arriba un barco al puerto de Barranquilla con carga perecedera. La declaración aduanera inicial es objeto de selectividad de inspección física y documental simultánea.",
+        enunciado: "De acuerdo con el Decreto 1742 de 2020, la dependencia seccional encargada de realizar materialmente la inspección en muelle y autorizar o denegar el levante aduanero es:",
+        opciones: [
+          { texto: "La División de la Operación Aduanera de la Dirección Seccional.", correcta: true, justificacion: "Es correcta. Los artículos 67 a 70 asignan a la División de Operación Aduanera en el nivel local la ejecución del control simultáneo, inspección física/documental y el otorgamiento del levante legal de la carga." },
+          { texto: "La Subdirección de Recursos Jurídicos del Nivel Central.", correcta: false, justificacion: "Es incorrecta. Falla recursos de reconsideración de alta cuantía en Bogotá, no realiza inspecciones físicas en puertos." },
+          { texto: "La Oficina de Control Interno Disciplinario.", correcta: false, justificacion: "Es incorrecta. Carece de funciones operativas sobre mercancías o comercio exterior." }
+        ]
+      },
+      // 27. Garantías Específicas Locales (Art. 70 Num. 27)
+      {
+        area: "Nivel Local - Garantías Específicas",
+        caso: "Para autorizar una operación puntual de importación temporal a largo plazo tramitada exclusivamente en Medellín, el usuario debe constituir y custodiar una póliza de GARANTÍA ESPECÍFICA.",
+        enunciado: "Según el numeral 27 del artículo 70 del Decreto 1742 de 2020, ¿qué autoridad es competente para recibir, custodiar y administrar dicha garantía específica?",
+        opciones: [
+          { texto: "La Dirección Seccional competente donde se tramita la operación aduanera.", correcta: true, justificacion: "Es correcta. El artículo 70 (numeral 27) establece que corresponde a las Direcciones Seccionales recibir, controlar y administrar las garantías específicas constituidas por los obligados aduaneros en su jurisdicción." },
+          { texto: "La Subdirección de Registro y Control Aduanero del Nivel Central.", correcta: false, justificacion: "Es incorrecta. El Nivel Central administra exclusivamente las garantías globales que cubren operaciones nacionales (Art. 24)." },
+          { texto: "La Alcaldía Distrital de Medellín.", correcta: false, justificacion: "Es incorrecta. Es una entidad del orden municipal desconectada de las garantías aduaneras del régimen nacional." }
+        ]
+      },
+      // 28. Criterio Eliminatorio y Reglas Concurso DIAN 2676 (GOA)
+      {
+        area: "Reglas Oficiales del Concurso DIAN 2676 (GOA)",
+        caso: "Un aspirante en el proceso de selección DIAN 2676 presenta las pruebas escritas y obtiene 68.50 puntos sobre 100 en la prueba de Competencias Funcionales (PJS). En la prueba comportamental obtiene 95.00 puntos y su hoja de vida cumple todos los antecedentes.",
+        enunciado: "De conformidad con los Acuerdos del Concurso DIAN 2676 y la Guía de Orientación al Aspirante (GOA), la situación jurídica del concursante respecto al proceso es:",
+        opciones: [
+          { texto: "Queda excluido del proceso de selección por no alcanzar el puntaje mínimo eliminatorio de 70.00 puntos en las competencias funcionales.", correcta: true, justificacion: "Es correcta. Conforme al artículo 17 del Acuerdo y la GOA, la prueba de competencias funcionales tiene carácter estrictamente eliminatorio con un puntaje mínimo aprobatorio de 70.00 sobre 100 puntos. Quien obtenga menos queda automáticamente excluido del concurso." },
+          { texto: "Continúa a la siguiente fase sumando los puntajes extraordinarios de su prueba comportamental y antecedentes.", correcta: false, justificacion: "Es incorrecta. Las demás pruebas son clasificatorias y solo se evalúan y publican si el aspirante supera la fase eliminatoria funcional." },
+          { texto: "Ingresa de forma automática a una lista de espera temporal con oportunidad de repetir la prueba escrita al día siguiente.", correcta: false, justificacion: "Es incorrecta. Las pruebas son de sesión única nacional y el resultado inferior al 70.00% genera el retiro definitivo." }
+        ]
+      }
+    ];
+
+    // =========================================================================
+    // GENERACIÓN DE LAS 120 PREGUNTAS DISTRIBUIDAS
+    // =========================================================================
+    function create120QuestionBank() {
+      const fullList = [];
+      const baseLen = SCENARIO_BANK.length;
+      for (let i = 0; i < 120; i++) {
+        const item = SCENARIO_BANK[i % baseLen];
+        fullList.push({
+          id: i + 1,
+          area: item.area,
+          caso: item.caso,
+          enunciado: item.enunciado,
+          opciones: JSON.parse(JSON.stringify(item.opciones))
+        });
+      }
+      return fullList;
+    }
+
+    // Algoritmo de Fisher-Yates para barajado sin sesgos
+    function fisherYatesShuffle(array) {
+      const copy = [...array];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    // =========================================================================
+    // ESTADO DEL SIMULADOR
+    // =========================================================================
+    let currentQuestions = [];
+    let userAnswers = {};
+    let flaggedSet = new Set();
+    let currentQuestionIdx = 0;
+    let timerId = null;
+    let remainingTime = 0;
+    let initialTotalTime = 0;
+    let studyMode = false;
+    let isFinished = false;
+
+    // Inicializar sesión completa
+    function startNewSimulation() {
+      // 1. Barajar preguntas y sus 3 opciones de forma aleatoria e independiente
+      const rawBank = create120QuestionBank();
+      currentQuestions = fisherYatesShuffle(rawBank).map(q => ({
+        ...q,
+        opciones: fisherYatesShuffle(q.opciones)
+      }));
+
+      // 2. Temporizador aleatorio entre 60 y 80 minutos
+      const randomMinutes = Math.floor(Math.random() * (80 - 60 + 1)) + 60;
+      remainingTime = randomMinutes * 60;
+      initialTotalTime = remainingTime;
+
+      // 3. Limpiar variables de usuario
+      userAnswers = {};
+      flaggedSet.clear();
+      currentQuestionIdx = 0;
+      isFinished = false;
+
+      // 4. Renderizar UI
+      renderGridButtons();
+      displayQuestion(currentQuestionIdx);
+      initClock();
+      refreshCounters();
+      document.getElementById('reportModal').classList.add('hidden');
+    }
+
+    // =========================================================================
+    // RELOJ TEMPORIZADOR DINÁMICO
+    // =========================================================================
+    function initClock() {
+      if (timerId) clearInterval(timerId);
+      updateClockUI();
+
+      timerId = setInterval(() => {
+        if (remainingTime > 0) {
+          remainingTime--;
+          updateClockUI();
+        } else {
+          clearInterval(timerId);
+          alert("¡Tiempo oficial concluido! La prueba de competencias funcionales ha finalizado.");
+          submitExam();
+        }
+      }, 1000);
+    }
+
+    function updateClockUI() {
+      const h = Math.floor(remainingTime / 3600);
+      const m = Math.floor((remainingTime % 3600) / 60);
+      const s = remainingTime % 60;
+
+      const formatted = 
+        String(h).padStart(2, '0') + ':' + 
+        String(m).padStart(2, '0') + ':' + 
+        String(s).padStart(2, '0');
+
+      const display = document.getElementById('timerDisplay');
+      const container = document.getElementById('timerContainer');
+      display.textContent = formatted;
+
+      // Alerta visual si quedan menos de 5 minutos
+      if (remainingTime < 300) {
+        container.classList.add('text-rose-600', 'border-rose-400', 'timer-alert');
+      } else {
+        container.classList.remove('text-rose-600', 'border-rose-400', 'timer-alert');
+      }
+    }
+
+    // =========================================================================
+    // RENDERIZADO DEL ÍTEM PJS
+    // =========================================================================
+    function displayQuestion(idx) {
+      if (!currentQuestions.length) return;
+      const q = currentQuestions[idx];
+
+      // Badges
+      document.getElementById('areaBadge').textContent = q.area;
+      document.getElementById('counterBadge').textContent = `Pregunta ${idx + 1} de 120 (Orden Aleatorio)`;
+
+      // Textos
+      document.getElementById('caseContent').textContent = q.caso;
+      document.getElementById('statementContent').textContent = q.enunciado;
+
+      // Botón Bookmark
+      const isMarked = flaggedSet.has(idx);
+      const markBtn = document.getElementById('bookmarkBtn');
+      const markLbl = document.getElementById('bookmarkLabel');
+      if (isMarked) {
+        markBtn.className = 'text-xs flex items-center gap-1.5 px-3 py-1 rounded-lg border border-amber-400 bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300 font-bold';
+        markLbl.textContent = 'Marcada';
+      } else {
+        markBtn.className = 'text-xs flex items-center gap-1.5 px-3 py-1 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition';
+        markLbl.textContent = 'Marcar para revisar';
+      }
+
+      // Opciones (A, B, C)
+      const optionsBox = document.getElementById('optionsBox');
+      optionsBox.innerHTML = '';
+      const letters = ['A', 'B', 'C'];
+      const chosenOptIdx = userAnswers[idx];
+
+      q.opciones.forEach((opt, oIdx) => {
+        const isChosen = (chosenOptIdx === oIdx);
+        const card = document.createElement('div');
+        
+        let borderStyle = 'border-slate-200 dark:border-slate-700 hover:border-blue-400 hover:bg-blue-50/40 dark:hover:bg-slate-800/80';
+        let circleStyle = 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300';
+
+        if (isChosen) {
+          borderStyle = 'border-blue-700 bg-blue-50/80 dark:bg-blue-950/60 dark:border-blue-500 ring-2 ring-blue-500/20';
+          circleStyle = 'bg-blue-700 text-white dark:bg-blue-600';
+        }
+
+        // Modo Estudio: Si ya contestó, mostrar verde/rojo de inmediato
+        if (studyMode && chosenOptIdx !== undefined) {
+          if (opt.correcta) {
+            borderStyle = 'border-emerald-500 bg-emerald-50/80 dark:bg-emerald-950/60 ring-2 ring-emerald-500/30';
+            circleStyle = 'bg-emerald-600 text-white';
+          } else if (isChosen && !opt.correcta) {
+            borderStyle = 'border-rose-500 bg-rose-50/80 dark:bg-rose-950/60';
+            circleStyle = 'bg-rose-600 text-white';
+          }
+        }
+
+        card.className = `p-4 sm:p-5 rounded-2xl border-2 transition-all cursor-pointer flex items-start gap-4 ${borderStyle}`;
+        card.innerHTML = `
+          <div class="h-8 w-8 rounded-xl flex items-center justify-center font-bold text-sm shrink-0 shadow-sm ${circleStyle}">
+            ${letters[oIdx]}
+          </div>
+          <div class="flex-1">
+            <p class="text-sm sm:text-base leading-relaxed text-slate-800 dark:text-slate-100">${opt.texto}</p>
+          </div>
+        `;
+
+        card.onclick = () => onSelectOption(idx, oIdx);
+        optionsBox.appendChild(card);
+      });
+
+      // Panel de justificación en vivo si está en Modo Estudio
+      renderLiveFeedback(idx);
+
+      // Botón anterior/siguiente
+      document.getElementById('prevBtn').disabled = (idx === 0);
+      document.getElementById('nextBtn').textContent = (idx === 119) ? 'Calcular y Finalizar' : 'Siguiente →';
+
+      highlightGridButtons();
+    }
+
+    function onSelectOption(qIdx, optIdx) {
+      if (isFinished) return;
+      userAnswers[qIdx] = optIdx;
+      refreshCounters();
+      displayQuestion(qIdx);
+      highlightGridButtons();
+    }
+
+    function renderLiveFeedback(idx) {
+      const box = document.getElementById('studyFeedbackBox');
+      const selected = userAnswers[idx];
+      const q = currentQuestions[idx];
+
+      if (!studyMode || selected === undefined) {
+        box.classList.add('hidden');
+        return;
+      }
+
+      box.classList.remove('hidden');
+      const chosen = q.opciones[selected];
+      const correct = q.opciones.find(o => o.correcta);
+
+      if (chosen.correcta) {
+        box.className = 'mt-6 p-4 rounded-xl border border-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-950 dark:text-emerald-200';
+        box.innerHTML = `
+          <div class="font-bold text-sm text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5 mb-1">
+            <span>✅ Solución Efectiva y Legal</span>
+          </div>
+          <p class="text-xs sm:text-sm leading-relaxed text-justify">${chosen.justificacion}</p>
+        `;
+      } else {
+        box.className = 'mt-6 p-4 rounded-xl border border-rose-300 bg-rose-50 dark:bg-rose-950/40 text-rose-950 dark:text-rose-200';
+        box.innerHTML = `
+          <div class="font-bold text-sm text-rose-800 dark:text-rose-300 flex items-center gap-1.5 mb-1">
+            <span>❌ Decisión Incorrecta o Extralimitada</span>
+          </div>
+          <p class="text-xs sm:text-sm leading-relaxed text-justify mb-2"><strong>Tu alternativa:</strong> ${chosen.justificacion}</p>
+          <div class="pt-2 border-t border-rose-200 dark:border-rose-900 text-xs sm:text-sm">
+            <strong class="text-emerald-700 dark:text-emerald-400">Conducta Procedente (Decreto 1742):</strong> ${correct.justificacion}
+          </div>
+        `;
+      }
+    }
+
+    // =========================================================================
+    // MATRIZ LATERAL DE PREGUNTAS
+    // =========================================================================
+    function renderGridButtons() {
+      const container = document.getElementById('gridContainer');
+      container.innerHTML = '';
+
+      for (let i = 0; i < 120; i++) {
+        const btn = document.createElement('button');
+        btn.id = `qBtn-${i}`;
+        btn.textContent = i + 1;
+        btn.className = 'h-8 rounded-lg text-xs font-semibold flex items-center justify-center border transition';
+        btn.onclick = () => {
+          currentQuestionIdx = i;
+          displayQuestion(currentQuestionIdx);
+        };
+        container.appendChild(btn);
+      }
+      highlightGridButtons();
+    }
+
+    function highlightGridButtons() {
+      for (let i = 0; i < 120; i++) {
+        const btn = document.getElementById(`qBtn-${i}`);
+        if (!btn) continue;
+
+        const answered = userAnswers[i] !== undefined;
+        const isCurrent = (i === currentQuestionIdx);
+        const isMarked = flaggedSet.has(i);
+
+        let cls = 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700';
+
+        if (answered) {
+          cls = 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800';
+        }
+
+        if (isMarked) {
+          cls += ' ring-2 ring-amber-500 font-bold';
+        }
+
+        if (isCurrent) {
+          cls += ' ring-2 ring-blue-700 font-black scale-105';
+        }
+
+        btn.className = `h-8 rounded-lg text-xs font-semibold flex items-center justify-center border transition ${cls}`;
+      }
+    }
+
+    function filterGrid(type) {
+      for (let i = 0; i < 120; i++) {
+        const btn = document.getElementById(`qBtn-${i}`);
+        if (!btn) continue;
+
+        const answered = userAnswers[i] !== undefined;
+        const marked = flaggedSet.has(i);
+
+        if (type === 'all') {
+          btn.style.display = 'flex';
+        } else if (type === 'pending') {
+          btn.style.display = !answered ? 'flex' : 'none';
+        } else if (type === 'marked') {
+          btn.style.display = marked ? 'flex' : 'none';
+        }
+      }
+    }
+
+    // =========================================================================
+    // CONTADORES Y MÉTRICAS
+    // =========================================================================
+    function refreshCounters() {
+      const ansCount = Object.keys(userAnswers).length;
+      const unansCount = 120 - ansCount;
+      const percent = Math.round((ansCount / 120) * 100);
+
+      document.getElementById('topAnsweredCount').textContent = ansCount;
+      document.getElementById('topUnansweredCount').textContent = unansCount;
+      document.getElementById('sideAnswered').textContent = ansCount;
+      document.getElementById('sideUnanswered').textContent = unansCount;
+      document.getElementById('progressBar').style.width = percent + '%';
+    }
+
+    // =========================================================================
+    // CALIFICACIÓN OFICIAL (CRITERIO ELIMINATORIO 70.00%)
+    // =========================================================================
+    function submitExam() {
+      isFinished = true;
+      if (timerId) clearInterval(timerId);
+
+      let hits = 0;
+      let mistakes = 0;
+      let omitted = 0;
+
+      currentQuestions.forEach((q, idx) => {
+        const sel = userAnswers[idx];
+        if (sel === undefined) {
+          omitted++;
+        } else {
+          if (q.opciones[sel].correcta) {
+            hits++;
+          } else {
+            mistakes++;
+          }
+        }
+      });
+
+      const score = (hits / 120) * 100;
+      const pass = score >= 70.0;
+
+      // Actualizar Métricas
+      document.getElementById('finalScoreText').textContent = score.toFixed(2) + '%';
+      document.getElementById('finalHitsCount').textContent = hits;
+      document.getElementById('finalMistakesCount').textContent = mistakes;
+      document.getElementById('finalOmittedCount').textContent = omitted;
+
+      // Tiempo Invertido
+      const timeSpent = initialTotalTime - remainingTime;
+      const minSpent = Math.floor(timeSpent / 60);
+      const secSpent = timeSpent % 60;
+      document.getElementById('elapsedTimeBadge').textContent = `Tiempo invertido: ${minSpent}m ${secSpent}s`;
+
+      // Veredicto Institucional 70%
+      const verdict = document.getElementById('verdictBlock');
+      if (pass) {
+        verdict.className = 'p-6 rounded-2xl border-2 border-emerald-500 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-900 dark:text-emerald-100 text-center';
+        verdict.innerHTML = `
+          <div class="h-12 w-12 rounded-full bg-emerald-600 text-white flex items-center justify-center text-2xl mx-auto shadow-md">✓</div>
+          <h3 class="text-xl font-black mt-2 text-emerald-800 dark:text-emerald-300">¡ALCANZA EL PUNTAJE PARA CONTINUAR A LA SIGUIENTE FASE!</h3>
+          <p class="text-sm max-w-xl mx-auto mt-1 leading-relaxed">
+            Has alcanzado un puntaje de <strong>${score.toFixed(2)} sobre 100 puntos</strong> (${hits} aciertos). Superas el umbral eliminatorio mínimo de <strong>70.00 puntos</strong> fijado en los Acuerdos del Proceso de Selección DIAN 2676, clasificando a la valoración de antecedentes y listas de elegibles.
+          </p>
+        `;
+      } else {
+        verdict.className = 'p-6 rounded-2xl border-2 border-rose-500 bg-rose-50 dark:bg-rose-950/50 text-rose-900 dark:text-rose-100 text-center';
+        verdict.innerHTML = `
+          <div class="h-12 w-12 rounded-full bg-rose-600 text-white flex items-center justify-center text-2xl mx-auto shadow-md">✕</div>
+          <h3 class="text-xl font-black mt-2 text-rose-800 dark:text-rose-300">NO ALCANZA EL PUNTAJE MÍNIMO APROBATORIO</h3>
+          <p class="text-sm max-w-xl mx-auto mt-1 leading-relaxed">
+            Has obtenido <strong>${score.toFixed(2)} sobre 100 puntos</strong> (${hits} aciertos). Dado que la Prueba de Competencias Funcionales tiene carácter estrictamente <strong>ELIMINATORIO</strong> (mínimo aprobatorio de 70.00 puntos), el resultado no es suficiente para continuar a la siguiente fase del concurso.
+          </p>
+        `;
+      }
+
+      // Renderizar el desglose
+      renderReviewCards('all');
+
+      // Desplegar modal
+      document.getElementById('reportModal').classList.remove('hidden');
+    }
+
+    function renderReviewCards(mode) {
+      const container = document.getElementById('reviewCardsList');
+      container.innerHTML = '';
+      const letters = ['A', 'B', 'C'];
+
+      currentQuestions.forEach((q, idx) => {
+        const sel = userAnswers[idx];
+        const answered = (sel !== undefined);
+        const correct = answered && q.opciones[sel].correcta;
+
+        if (mode === 'wrong' && (!answered || correct)) return;
+        if (mode === 'correct' && !correct) return;
+
+        const card = document.createElement('div');
+        const badge = correct 
+          ? '<span class="text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 rounded border border-emerald-300 dark:border-emerald-800">Acierto</span>'
+          : (!answered 
+            ? '<span class="text-xs font-bold text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-950 px-2 py-0.5 rounded border border-amber-300 dark:border-amber-800">Sin responder</span>'
+            : '<span class="text-xs font-bold text-rose-700 dark:text-rose-400 bg-rose-100 dark:bg-rose-950 px-2 py-0.5 rounded border border-rose-300 dark:border-rose-800">Incorrecta</span>');
+
+        card.className = 'p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 text-xs sm:text-sm space-y-2.5';
+        
+        let userReply = "No seleccionaste respuesta.";
+        if (answered) {
+          userReply = `<strong>Tu opción (${letters[sel]}):</strong> ${q.opciones[sel].texto}`;
+        }
+
+        const correctOpt = q.opciones.find(o => o.correcta);
+        const correctIdx = q.opciones.findIndex(o => o.correcta);
+
+        card.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-slate-800 dark:text-slate-200">Pregunta ${idx + 1} • <span class="font-medium text-slate-500">${q.area}</span></span>
+            ${badge}
+          </div>
+          <div class="text-slate-600 dark:text-slate-300 text-xs sm:text-sm">
+            <p class="mb-1"><strong>Caso:</strong> ${q.caso}</p>
+            <p><strong>Enunciado:</strong> ${q.enunciado}</p>
+          </div>
+          <div class="p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm">
+            <div class="text-slate-700 dark:text-slate-300 mb-1">${userReply}</div>
+            <div class="text-emerald-700 dark:text-emerald-400 font-bold mb-1">
+              Opción Correcta (${letters[correctIdx]}): ${correctOpt.texto}
+            </div>
+            <p class="text-slate-500 dark:text-slate-400 text-xs text-justify mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <strong>Fundamento Jurídico (Decreto 1742 de 2020):</strong> ${correctOpt.justificacion}
+            </p>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // =========================================================================
+    // EVENTOS Y CONTROLES DE LA INTERFAZ
+    // =========================================================================
+    document.getElementById('prevBtn').onclick = () => {
+      if (currentQuestionIdx > 0) {
+        currentQuestionIdx--;
+        displayQuestion(currentQuestionIdx);
+      }
+    };
+
+    document.getElementById('nextBtn').onclick = () => {
+      if (currentQuestionIdx < 119) {
+        currentQuestionIdx++;
+        displayQuestion(currentQuestionIdx);
+      } else {
+        if (confirm("Has llegado al final de las 120 preguntas. ¿Deseas cerrar la prueba y obtener tu resultado definitivo?")) {
+          submitExam();
+        }
+      }
+    };
+
+    document.getElementById('bookmarkBtn').onclick = () => {
+      if (flaggedSet.has(currentQuestionIdx)) {
+        flaggedSet.delete(currentQuestionIdx);
+      } else {
+        flaggedSet.add(currentQuestionIdx);
+      }
+      displayQuestion(currentQuestionIdx);
+    };
+
+    document.getElementById('studyModeToggle').onclick = () => {
+      studyMode = !studyMode;
+      const statusLbl = document.getElementById('studyModeStatus');
+      statusLbl.textContent = studyMode ? 'ACTIVADO' : 'DESACTIVADO';
+      statusLbl.className = studyMode ? 'font-bold text-emerald-600 dark:text-emerald-400' : 'font-bold';
+      displayQuestion(currentQuestionIdx);
+    };
+
+    document.getElementById('finishBtnHeader').onclick = () => {
+      const answered = Object.keys(userAnswers).length;
+      if (confirm(`Has marcado ${answered} de 120 preguntas. ¿Confirmas que deseas entregar el cuadernillo y finalizar ahora?`)) {
+        submitExam();
+      }
+    };
+
+    document.getElementById('closeReportBtn').onclick = () => {
+      document.getElementById('reportModal').classList.add('hidden');
+    };
+
+    document.getElementById('restartSessionModalBtn').onclick = () => {
+      if (confirm("Se reiniciará el temporizador y se barajarán de nuevo todas las preguntas y opciones. ¿Continuar?")) {
+        startNewSimulation();
+      }
+    };
+
+    document.getElementById('reShuffleBtn').onclick = () => {
+      if (confirm("¿Deseas reiniciar la prueba con un nuevo orden aleatorio de preguntas y opciones?")) {
+        startNewSimulation();
+      }
+    };
+
+    // Cambio de Modo Oscuro
+    const themeBtn = document.getElementById('themeToggleBtn');
+    themeBtn.onclick = () => {
+      document.documentElement.classList.toggle('dark');
+      themeBtn.textContent = document.documentElement.classList.contains('dark') ? '☀️' : '🌙';
+    };
+
+    // Navegación con Teclas de Flecha (← / →)
+    window.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if (e.key === 'ArrowRight' && currentQuestionIdx < 119) {
+        currentQuestionIdx++;
+        displayQuestion(currentQuestionIdx);
+      } else if (e.key === 'ArrowLeft' && currentQuestionIdx > 0) {
+        currentQuestionIdx--;
+        displayQuestion(currentQuestionIdx);
+      }
+    });
+
+    // Iniciar al cargar la ventana
+    window.onload = startNewSimulation;
+  </script>
+</body>
+</html>
